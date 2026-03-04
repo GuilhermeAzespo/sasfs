@@ -106,6 +106,13 @@ EOF
 
 # 8. FTP Configuration (vsftpd)
 echo -e "${BLUE}Configuring FTP Server (vsftpd)...${NC}"
+
+# Add /usr/sbin/nologin to /etc/shells if not already present
+# This is required for PAM authentication to work with vsftpd for nologin users
+if ! grep -q "/usr/sbin/nologin" /etc/shells; then
+    echo "/usr/sbin/nologin" >> /etc/shells
+fi
+
 cat > /etc/vsftpd.conf <<EOF
 listen=NO
 listen_ipv6=YES
