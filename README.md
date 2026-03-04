@@ -37,6 +37,8 @@ Para instalar o sistema completo em um servidor novo, siga os passos abaixo:
    sudo ./install.sh
    ```
 
+Durante a instalação, o script solicitará que você defina o **Nome de Usuário** e a **Senha** do primeiro administrador. Esses dados serão usados para o primeiro acesso ao painel.
+
 ## 🖥️ Como Acessar
 
 Após a conclusão do script:
