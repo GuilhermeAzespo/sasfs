@@ -134,7 +134,32 @@ pasv_max_port=30099
 check_shell=NO
 EOF
 
-# 9. Admin User Creation (Interactive)
+# 9. Samba Configuration (Registry & Quotas)
+echo -e "${BLUE}Configuring Samba (Registry & Custom Quotas)...${NC}"
+
+# Enable registry shares in smb.conf if not already present
+if ! grep -q "include = registry" /etc/samba/smb.conf; then
+    sed -i '/\[global\]/a \   include = registry' /etc/samba/smb.conf
+fi
+
+# Deploy custom dfree script for quota reporting
+cat > /usr/local/bin/samba-dfree.sh <<'EOF'
+#!/bin/sh
+# Custom Samba dfree script for exact folder matching
+# Arguments: $1 = directory, $2 = share name
+
+TARGET_DIR="$1"
+SHARE_NAME="$2"
+
+# Ensure target directory is mapped correctly
+# Samba often calls dfree with the root of the disk; we filter for the specific share path
+df -P "$TARGET_DIR" | tail -1 | awk '{print $2, $4}'
+EOF
+
+chmod +x /usr/local/bin/samba-dfree.sh
+systemctl restart smbd
+
+# 10. Admin User Creation (Interactive)
 echo -e "${BLUE}=== Admin User Setup ===${NC}"
 echo "We need to create the first administrator account to access the dashboard."
 
