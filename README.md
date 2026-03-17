@@ -23,7 +23,7 @@ Para instalar o sistema completo em um servidor novo, siga os passos abaixo:
 
 1. **Clone o Repositório**:
    ```bash
-   git clone https://github.com/jorgeazevedo98-rgb/sasfs.git
+   git clone https://github.com/GuilhermeAzespo/sasfs.git
    cd sasfs
    ```
 
