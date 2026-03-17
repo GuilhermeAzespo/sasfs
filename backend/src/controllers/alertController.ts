@@ -62,6 +62,52 @@ class AlertController {
             res.status(500).json({ message: 'Error fetching alerts', error: error.message });
         }
     }
+
+    async getConfig(req: Request, res: Response) {
+        try {
+            const config = await db.getConfig();
+            res.json(config);
+        } catch (error: any) {
+            res.status(500).json({ message: 'Error fetching config', error: error.message });
+        }
+    }
+
+    async updateConfig(req: Request, res: Response) {
+        try {
+            const config = await db.updateConfig(req.body);
+            res.json(config);
+        } catch (error: any) {
+            res.status(500).json({ message: 'Error updating config', error: error.message });
+        }
+    }
+
+    async testSMTP(req: Request, res: Response) {
+        const { host, port, user, password } = req.body;
+        
+        try {
+            const nodemailer = require('nodemailer');
+            const transporter = nodemailer.createTransport({
+                host,
+                port: Number(port),
+                secure: Number(port) === 465,
+                auth: {
+                    user,
+                    pass: password
+                },
+                timeout: 10000 // 10 seconds timeout
+            });
+
+            await transporter.verify();
+            res.json({ success: true, message: 'SMTP connection successful!' });
+        } catch (error: any) {
+            console.error('SMTP Test Error:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Failed to connect to SMTP server', 
+                error: error.message 
+            });
+        }
+    }
 }
 
 export default new AlertController();

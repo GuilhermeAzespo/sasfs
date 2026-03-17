@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full nav-item ${activeTab === item.id ? 'active' : ''}`}
                     >
-                        <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-blue-500' : ''}`} />
+                        <item.icon className="w-5 h-5" />
                         <span>{item.label}</span>
                     </button>
                 ))}

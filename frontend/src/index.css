@@ -57,11 +57,19 @@
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 text-slate-400 font-medium;
+    @apply flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 text-slate-400 font-medium w-full text-left;
   }
 
-  .nav-item-active {
+  .nav-item:hover {
+    @apply bg-white/5 text-slate-300;
+  }
+
+  .nav-item.active {
     @apply bg-blue-600 text-white shadow-[0_4px_20px_rgba(59,130,246,0.3)];
+  }
+
+  .nav-item.active svg {
+    @apply text-white;
   }
 
   .stat-label {

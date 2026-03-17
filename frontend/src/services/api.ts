@@ -13,6 +13,18 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('sas_token');
+            localStorage.removeItem('sas_user');
+            window.location.href = '/';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const folderService = {
     getFolders: async () => {
         const response = await api.get('/folders');
@@ -59,6 +71,21 @@ export const userService = {
     },
     updateRole: async (id: number, role: string) => {
         const response = await api.patch(`/users/${id}/role`, { role });
+        return response.data;
+    }
+};
+
+export const alertService = {
+    getConfig: async () => {
+        const response = await api.get('/alerts/config');
+        return response.data;
+    },
+    updateConfig: async (config: any) => {
+        const response = await api.patch('/alerts/config', config);
+        return response.data;
+    },
+    testSMTP: async (config: any) => {
+        const response = await api.post('/alerts/test-smtp', config);
         return response.data;
     }
 };

@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Radio, Save, ShieldCheck, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Radio, Save, ShieldCheck, Activity, Loader2 } from 'lucide-react';
+import { alertService } from '../services/api';
 
 interface SNMPConfigModalProps {
     isOpen: boolean;
@@ -7,6 +8,51 @@ interface SNMPConfigModalProps {
 }
 
 const SNMPConfigModal: React.FC<SNMPConfigModalProps> = ({ isOpen, onClose }) => {
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [config, setConfig] = useState({
+        enabled: false,
+        community: 'public',
+        allowedIPs: ''
+    });
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchConfig();
+        }
+    }, [isOpen]);
+
+    const fetchConfig = async () => {
+        setLoading(true);
+        try {
+            const currentConfig = await alertService.getConfig();
+            if (currentConfig.snmp) {
+                setConfig({
+                    enabled: currentConfig.snmp.enabled || false,
+                    community: currentConfig.snmp.community || 'public',
+                    allowedIPs: currentConfig.snmp.allowedIPs || ''
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching SNMP config:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            await alertService.updateConfig({ snmp: config });
+            onClose();
+        } catch (error) {
+            console.error('Error saving SNMP config:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -34,47 +80,76 @@ const SNMPConfigModal: React.FC<SNMPConfigModalProps> = ({ isOpen, onClose }) =>
                     </button>
                 </div>
 
-                <form className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <div className="flex items-center gap-3">
-                                <ShieldCheck className="w-5 h-5 text-green-500" />
-                                <div>
-                                    <div className="text-sm font-bold text-white leading-none">Enable SNMP v2c</div>
-                                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Read-Only Access</div>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <p className="text-sm text-slate-400">Loading monitoring config...</p>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                <div className="flex items-center gap-3 text-left">
+                                    <ShieldCheck className={`w-5 h-5 ${config.enabled ? 'text-green-500' : 'text-slate-500'}`} />
+                                    <div>
+                                        <div className="text-sm font-bold text-white leading-none">Enable SNMP v2c</div>
+                                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Read-Only Access</div>
+                                    </div>
+                                </div>
+                                <div 
+                                    onClick={() => setConfig({ ...config, enabled: !config.enabled })}
+                                    className={`w-12 h-6 rounded-full relative cursor-pointer transition-all ${config.enabled ? 'bg-blue-600 ring-4 ring-blue-500/10' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config.enabled ? 'right-1' : 'left-1'}`} />
                                 </div>
                             </div>
-                            <div className="w-12 h-6 bg-blue-600 rounded-full relative cursor-pointer ring-4 ring-blue-500/10">
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all" />
+
+                            <div className="space-y-2 text-left">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">Community String</label>
+                                <input 
+                                    type="text" 
+                                    value={config.community}
+                                    onChange={(e) => setConfig({ ...config, community: e.target.value })}
+                                    placeholder="public" 
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all text-sm font-mono" 
+                                />
+                            </div>
+
+                            <div className="space-y-2 text-left">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">Allowed IPs (CIDR)</label>
+                                <input 
+                                    type="text" 
+                                    value={config.allowedIPs}
+                                    onChange={(e) => setConfig({ ...config, allowedIPs: e.target.value })}
+                                    placeholder="192.168.1.0/24" 
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all text-sm font-mono" 
+                                />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">Community String</label>
-                            <input type="text" placeholder="public" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all text-sm font-mono" />
+                        <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 flex items-start gap-4 text-left">
+                            <Activity className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                                Enabling SNMP allows tools like Zabbix, PRTG, or Grafana to poll storage metrics from this machine automatically.
+                            </p>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">Allowed IPs (CIDR)</label>
-                            <input type="text" placeholder="192.168.1.0/24" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all text-sm font-mono" />
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 flex items-start gap-4">
-                        <Activity className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                            Enabling SNMP allows tools like Zabbix, PRTG, or Grafana to poll storage metrics from this machine automatically.
-                        </p>
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 group"
-                    >
-                        <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        Update Monitor Config
-                    </button>
-                </form>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                    Update Monitor Config
+                                </>
+                            )}
+                        </button>
+                    </form>
+                )}
             </div>
         </div>
     );

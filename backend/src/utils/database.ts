@@ -132,6 +132,22 @@ class Database {
         await this.save();
         return this.data.users[index];
     }
+
+    // Config Methods
+    async getConfig(): Promise<any> {
+        await this.init();
+        return (this.data as any).config || { smtp: {}, snmp: { enabled: false } };
+    }
+
+    async updateConfig(configData: any): Promise<any> {
+        await this.init();
+        (this.data as any).config = {
+            ...((this.data as any).config || {}),
+            ...configData
+        };
+        await this.save();
+        return (this.data as any).config;
+    }
 }
 
 export default new Database();

@@ -60,7 +60,42 @@ export class SambaService {
     }
 
     async getAuditLogs(): Promise<any[]> {
-        return [];
+        try {
+            const logPath = '/var/log/samba/audit.log';
+            try {
+                await fs.access(logPath);
+            } catch (e) {
+                return [];
+            }
+
+            const content = await fs.readFile(logPath, 'utf8');
+            const lines = content.trim().split('\n').reverse().slice(0, 1000); // Latest 1000 logs
+            
+            return lines.map(line => {
+                // Regex to parse: [Date] [Host] smbd_audit: user|ip|share|action|status|path
+                // Example: 2026-03-17T12:00:00+00:00 filesystem smbd_audit: user|1.2.3.4|share|pwrite|ok|file.txt
+                const match = line.match(/^(\S+)\s+\S+\s+smbd_audit:\s+([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.*)$/);
+                
+                if (match) {
+                    const [_, timestamp, user, ip, share, action, status, path] = match;
+                    return {
+                        timestamp: new Date(timestamp).toLocaleString('pt-BR'),
+                        user,
+                        ip,
+                        share,
+                        action: action === 'pwrite' ? 'write' : action === 'unlink' ? 'delete' : action,
+                        status,
+                        path
+                    };
+                }
+                
+                // Fallback for different log formats
+                return null;
+            }).filter(log => log !== null);
+        } catch (error: any) {
+            console.error('[SAMBA] Error reading audit logs:', error.message);
+            return [];
+        }
     }
 }
 
